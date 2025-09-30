@@ -3,6 +3,7 @@ import { useTasks } from '@/domain/task';
 import { LoadingSpinner } from '@/core/components/LoadingSpinner';
 import { Link } from 'react-router-dom';
 import { Button } from '@/core/components/Button';
+import { Task } from '@/domain/task/types';
 
 /**
  * @page DashboardPage
@@ -28,7 +29,7 @@ export const DashboardPage = () => {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold">Your Tasks</h2>
           <Link to="/dashboard/tasks/new">
-            <Button>+ New Task</Button>
+            <Button variant="default">+ New Task</Button>
           </Link>
         </div>
         <div className="mt-4">
@@ -36,7 +37,7 @@ export const DashboardPage = () => {
           {error && <p className="text-red-500">Error: {error.message}</p>}
           {tasks && (
             <ul className="space-y-2">
-              {tasks.map((task) => (
+              {tasks.map((task: Task) => (
                 <li key={task.id} className="rounded border p-3 bg-white shadow-sm">
                   <h3 className="font-semibold">{task.title}</h3>
                   {task.description && <p className="text-sm text-gray-600">{task.description}</p>}

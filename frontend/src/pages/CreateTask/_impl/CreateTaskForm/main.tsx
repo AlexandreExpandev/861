@@ -100,7 +100,7 @@ export const CreateTaskForm = () => {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isCreating}>
+          <Button type="submit" variant="default" disabled={isCreating}>
             {isCreating ? 'Saving...' : 'Save Task'}
           </Button>
         </div>
