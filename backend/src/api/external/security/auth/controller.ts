@@ -11,17 +11,19 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
   try {
     // Validate request body
     const validatedData = loginSchema.parse(req.body);
-    
+
     const result = await loginUser(validatedData);
-    
+
     if (!result) {
-      return res.status(401).json(errorResponse('Invalid credentials'));
+      res.status(401).json(errorResponse('Invalid credentials'));
+      return;
     }
-    
+
     res.json(successResponse(result));
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json(errorResponse('Validation failed', error.errors));
+      res.status(400).json(errorResponse('Validation failed', error.errors));
+      return;
     }
     next(error);
   }
@@ -30,20 +32,26 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
 /**
  * @summary Handle user registration
  */
-export async function registerHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+export async function registerHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
   try {
     // Validate request body
     const validatedData = registerSchema.parse(req.body);
-    
+
     const result = await registerUser(validatedData);
-    
+
     res.status(201).json(successResponse(result));
   } catch (error: any) {
     if (error.name === 'ZodError') {
-      return res.status(400).json(errorResponse('Validation failed', error.errors));
+      res.status(400).json(errorResponse('Validation failed', error.errors));
+      return;
     }
     if (error.code === 'EMAIL_EXISTS') {
-      return res.status(409).json(errorResponse('Email already in use'));
+      res.status(409).json(errorResponse('Email already in use'));
+      return;
     }
     next(error);
   }

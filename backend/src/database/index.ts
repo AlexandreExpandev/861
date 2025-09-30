@@ -10,9 +10,16 @@ let pool: sql.ConnectionPool;
  */
 export async function setupDatabase(): Promise<void> {
   try {
-    pool = await new sql.ConnectionPool(config.database).connect();
+    pool = await new sql.ConnectionPool({
+      server: config.database.host,
+      port: config.database.port,
+      user: config.database.user,
+      password: config.database.password,
+      database: config.database.database,
+      options: config.database.options,
+    }).connect();
     logger.info('Database connection established');
-    
+
     // Initialize database schema if needed
     await initializeDatabase();
   } catch (error) {
@@ -27,11 +34,39 @@ export async function setupDatabase(): Promise<void> {
 async function initializeDatabase(): Promise<void> {
   try {
     // Create users table if it doesn't exist
-    await pool.request().query(`\n      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')\n      BEGIN\n        CREATE TABLE users (\n          idUser INT IDENTITY(1,1) PRIMARY KEY,\n          name NVARCHAR(100) NOT NULL,\n          email NVARCHAR(100) NOT NULL UNIQUE,\n          password NVARCHAR(100) NOT NULL,\n          dateCreated DATETIME2 NOT NULL,\n          dateModified DATETIME2 NULL,\n          active BIT NOT NULL DEFAULT 1\n        );\n      END\n    `);
-    
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'users')
+      BEGIN
+        CREATE TABLE users (
+          idUser INT IDENTITY(1,1) PRIMARY KEY,
+          name NVARCHAR(100) NOT NULL,
+          email NVARCHAR(100) NOT NULL UNIQUE,
+          password NVARCHAR(100) NOT NULL,
+          dateCreated DATETIME2 NOT NULL,
+          dateModified DATETIME2 NULL,
+          active BIT NOT NULL DEFAULT 1
+        );
+      END
+    `);
+
     // Create tasks table if it doesn't exist
-    await pool.request().query(`\n      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tasks')\n      BEGIN\n        CREATE TABLE tasks (\n          idTask INT IDENTITY(1,1) PRIMARY KEY,\n          idUser INT NOT NULL,\n          title NVARCHAR(255) NOT NULL,\n          description NVARCHAR(1000) NULL,\n          status NVARCHAR(50) NOT NULL DEFAULT 'Pendente',\n          dateCreated DATETIME2 NOT NULL,\n          dateModified DATETIME2 NULL,\n          deleted BIT NOT NULL DEFAULT 0,\n          CONSTRAINT FK_Tasks_User FOREIGN KEY (idUser) REFERENCES users(idUser)\n        );\n      END\n    `);
-    
+    await pool.request().query(`
+      IF NOT EXISTS (SELECT * FROM sys.tables WHERE name = 'tasks')
+      BEGIN
+        CREATE TABLE tasks (
+          idTask INT IDENTITY(1,1) PRIMARY KEY,
+          idUser INT NOT NULL,
+          title NVARCHAR(255) NOT NULL,
+          description NVARCHAR(1000) NULL,
+          status NVARCHAR(50) NOT NULL DEFAULT 'Pendente',
+          dateCreated DATETIME2 NOT NULL,
+          dateModified DATETIME2 NULL,
+          deleted BIT NOT NULL DEFAULT 0,
+          CONSTRAINT FK_Tasks_User FOREIGN KEY (idUser) REFERENCES users(idUser)
+        );
+      END
+    `);
+
     logger.info('Database schema initialized');
   } catch (error) {
     logger.error('Database schema initialization failed', { error });
@@ -47,16 +82,16 @@ export async function dbRequest(query: string, params?: any): Promise<any> {
     if (!pool) {
       await setupDatabase();
     }
-    
+
     const request = pool.request();
-    
+
     // Add parameters to request
     if (params) {
-      Object.keys(params).forEach(key => {
+      Object.keys(params).forEach((key) => {
         request.input(key, params[key]);
       });
     }
-    
+
     const result = await request.query(query);
     return result.recordset;
   } catch (error) {
