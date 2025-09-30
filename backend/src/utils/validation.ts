@@ -16,8 +16,8 @@ export const zId = z.number().int().positive();
 export const zPriority = z.number().int().min(0).max(2);
 
 // Date validations
-export const zDateString = z.string().refine(val => !isNaN(Date.parse(val)), {
-  message: 'Invalid date format'
+export const zDateString = z.string().refine((val) => !isNaN(Date.parse(val)), {
+  message: 'Invalid date format',
 });
 
 // Boolean validations
@@ -35,10 +35,11 @@ export const zNullableDate = z.date().nullable().optional();
  */
 export function sanitizeInput(input: string): string {
   if (!input) return input;
-  
+
   return input
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;')\n    .replace(/\//g, '&#x2F;');
+    .replace(/'/g, '&#x27;')
+    .replace(/\//g, '&#x2F;');
 }
