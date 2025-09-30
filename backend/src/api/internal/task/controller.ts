@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { CrudController, errorResponse, successResponse } from '../../../middleware/crud';
 import { taskCreate, taskDelete, taskGet, taskList, taskUpdate } from '../../../services/task/taskService';
+import { taskCreateSchema } from '../../../services/task/taskValidation';
 
 const securable = 'TASK';
 
@@ -45,13 +46,23 @@ export async function createHandler(req: Request, res: Response, next: NextFunct
   }
 
   try {
+    // Validate request body against schema
+    const validatedData = taskCreateSchema.parse(validated.body);
+    
     const data = await taskCreate({
       idUser: validated.credential.idUser,
-      ...validated.body
+      ...validatedData
     });
     
+    // Set Location header for the newly created resource
+    res.location(`/api/internal/tasks/${data.idTask}`);
+    
+    // Return 201 Created with the task data
     res.status(201).json(successResponse(data));
   } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res.status(400).json(errorResponse('Validation failed', error.errors));
+    }
     next(error);
   }
 }

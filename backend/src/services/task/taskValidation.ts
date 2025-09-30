@@ -1,27 +1,16 @@
 import { z } from 'zod';
-import { TaskPriority } from './taskTypes';
+import { TaskStatus } from './taskTypes';
 
 /**
  * @summary Validation schema for task creation
  */
 export const taskCreateSchema = z.object({
   title: z.string()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be 100 characters or less'),
+    .min(1, 'O título da tarefa é obrigatório.')
+    .max(255, 'O título não pode ter mais de 255 caracteres.'),
   description: z.string()
-    .max(500, 'Description must be 500 characters or less')
+    .max(1000, 'A descrição não pode ter mais de 1000 caracteres.')
     .optional()
-    .default(''),
-  dueDate: z.string()
-    .refine(val => !isNaN(Date.parse(val)), {
-      message: 'Due date must be a valid date'
-    })
-    .transform(val => new Date(val)),
-  priority: z.number()
-    .int()
-    .min(0)
-    .max(2)
-    .default(TaskPriority.Medium)
 });
 
 /**
@@ -29,20 +18,11 @@ export const taskCreateSchema = z.object({
  */
 export const taskUpdateSchema = z.object({
   title: z.string()
-    .min(1, 'Title is required')
-    .max(100, 'Title must be 100 characters or less'),
+    .min(1, 'O título da tarefa é obrigatório.')
+    .max(255, 'O título não pode ter mais de 255 caracteres.'),
   description: z.string()
-    .max(500, 'Description must be 500 characters or less')
+    .max(1000, 'A descrição não pode ter mais de 1000 caracteres.')
+    .optional(),
+  status: z.enum([TaskStatus.Pendente, TaskStatus.EmAndamento, TaskStatus.Concluida])
     .optional()
-    .default(''),
-  dueDate: z.string()
-    .refine(val => !isNaN(Date.parse(val)), {
-      message: 'Due date must be a valid date'
-    })
-    .transform(val => new Date(val)),
-  priority: z.number()
-    .int()
-    .min(0)
-    .max(2),
-  completed: z.boolean().optional()
 });

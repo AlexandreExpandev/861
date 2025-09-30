@@ -6,9 +6,7 @@ export interface TaskEntity {
   idUser: number;
   title: string;
   description: string;
-  dueDate: Date;
-  priority: number;
-  completed: boolean;
+  status: string;
   dateCreated: Date;
   dateModified?: Date;
   deleted: boolean;
@@ -20,9 +18,7 @@ export interface TaskEntity {
 export interface TaskCreateParams {
   idUser: number;
   title: string;
-  description: string;
-  dueDate: Date;
-  priority: number;
+  description?: string;
 }
 
 /**
@@ -32,17 +28,15 @@ export interface TaskUpdateParams {
   idUser: number;
   idTask: number;
   title: string;
-  description: string;
-  dueDate: Date;
-  priority: number;
-  completed?: boolean;
+  description?: string;
+  status?: string;
 }
 
 /**
- * @summary Task priority enum
+ * @summary Task status enum
  */
-export enum TaskPriority {
-  Low = 0,
-  Medium = 1,
-  High = 2
+export enum TaskStatus {
+  Pendente = 'Pendente',
+  EmAndamento = 'Em Andamento',
+  Concluida = 'Concluída'
 }

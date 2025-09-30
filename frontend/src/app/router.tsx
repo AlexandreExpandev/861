@@ -10,6 +10,7 @@ import { ErrorBoundary } from '@/core/components/ErrorBoundary';
 const HomePage = lazy(() => import('@/pages/Home'));
 const LoginPage = lazy(() => import('@/pages/Login'));
 const DashboardPage = lazy(() => import('@/pages/Dashboard'));
+const CreateTaskPage = lazy(() => import('@/pages/CreateTask')); // New page
 const NotFoundPage = lazy(() => import('@/pages/NotFound'));
 
 /**
@@ -49,6 +50,14 @@ const router = createBrowserRouter([
             element: (
               <Suspense fallback={<LoadingSpinner />}>
                 <DashboardPage />
+              </Suspense>
+            ),
+          },
+          {
+            path: 'tasks/new', // New route
+            element: (
+              <Suspense fallback={<LoadingSpinner />}>
+                <CreateTaskPage />
               </Suspense>
             ),
           },

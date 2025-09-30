@@ -27,3 +27,18 @@ export const zBoolean = z.boolean();
 export const zNullableString = z.string().nullable().optional();
 export const zNullableDescription = z.string().max(500).nullable().optional();
 export const zNullableDate = z.date().nullable().optional();
+
+/**
+ * @summary Sanitize input to prevent XSS attacks
+ * @param {string} input - The input to sanitize
+ * @returns {string} The sanitized input
+ */
+export function sanitizeInput(input: string): string {
+  if (!input) return input;
+  
+  return input
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;')\n    .replace(/\//g, '&#x2F;');
+}

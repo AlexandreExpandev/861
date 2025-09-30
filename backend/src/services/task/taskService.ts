@@ -1,5 +1,7 @@
 import { dbRequest } from '../../database';
-import { TaskCreateParams, TaskEntity, TaskUpdateParams } from './taskTypes';
+import { TaskCreateParams, TaskEntity, TaskStatus, TaskUpdateParams } from './taskTypes';
+import { sanitizeInput } from '../../utils/validation';
+import { logger } from '../../utils/logger';
 
 /**
  * @summary Get all tasks for a user
@@ -7,13 +9,13 @@ import { TaskCreateParams, TaskEntity, TaskUpdateParams } from './taskTypes';
 export async function taskList({ idUser }: { idUser: number }): Promise<TaskEntity[]> {
   try {
     const tasks = await dbRequest(
-      'SELECT * FROM tasks WHERE idUser = @idUser AND deleted = 0 ORDER BY priority DESC, dueDate ASC',
+      'SELECT * FROM tasks WHERE idUser = @idUser AND deleted = 0 ORDER BY dateCreated DESC',
       { idUser }
     );
     
     return tasks;
   } catch (error) {
-    console.error('Error listing tasks:', error);
+    logger.error('Error listing tasks:', { error, idUser });
     throw new Error('Failed to list tasks');
   }
 }
@@ -30,7 +32,7 @@ export async function taskGet({ idUser, idTask }: { idUser: number, idTask: numb
     
     return tasks.length > 0 ? tasks[0] : null;
   } catch (error) {
-    console.error('Error getting task:', error);
+    logger.error('Error getting task:', { error, idUser, idTask });
     throw new Error('Failed to get task');
   }
 }
@@ -39,29 +41,40 @@ export async function taskGet({ idUser, idTask }: { idUser: number, idTask: numb
  * @summary Create a new task
  */
 export async function taskCreate(params: TaskCreateParams): Promise<TaskEntity> {
+  const startTime = Date.now();
   try {
-    const { idUser, title, description, dueDate, priority } = params;
+    const { idUser, title, description = '' } = params;
+    
+    // Sanitize inputs to prevent XSS
+    const sanitizedTitle = sanitizeInput(title);
+    const sanitizedDescription = sanitizeInput(description);
+    
+    // Set default status to 'Pendente'
+    const status = TaskStatus.Pendente;
     
     const result = await dbRequest(
-      `INSERT INTO tasks (idUser, title, description, dueDate, priority, completed, dateCreated, deleted) \n       VALUES (@idUser, @title, @description, @dueDate, @priority, 0, GETUTCDATE(), 0);\n       SELECT SCOPE_IDENTITY() AS idTask;`,
-      { idUser, title, description, dueDate, priority }
+      `INSERT INTO tasks (idUser, title, description, status, dateCreated, deleted) \n       VALUES (@idUser, @title, @description, @status, GETUTCDATE(), 0);\n       SELECT SCOPE_IDENTITY() AS idTask;`,
+      { idUser, title: sanitizedTitle, description: sanitizedDescription, status }
     );
     
     const idTask = result[0].idTask;
     
-    return {
+    const createdTask: TaskEntity = {
       idTask,
       idUser,
-      title,
-      description,
-      dueDate,
-      priority,
-      completed: false,
+      title: sanitizedTitle,
+      description: sanitizedDescription,
+      status,
       dateCreated: new Date(),
       deleted: false
     };
+
+    const duration = Date.now() - startTime;
+    logger.info('Task created successfully', { idTask, idUser, duration });
+    
+    return createdTask;
   } catch (error) {
-    console.error('Error creating task:', error);
+    logger.error('Error creating task:', { error, params });
     throw new Error('Failed to create task');
   }
 }
@@ -71,7 +84,7 @@ export async function taskCreate(params: TaskCreateParams): Promise<TaskEntity> 
  */
 export async function taskUpdate(params: TaskUpdateParams): Promise<TaskEntity | null> {
   try {
-    const { idUser, idTask, title, description, dueDate, priority, completed } = params;
+    const { idUser, idTask, title, description, status } = params;
     
     // Check if task exists and belongs to user
     const existingTask = await taskGet({ idUser, idTask });
@@ -80,23 +93,32 @@ export async function taskUpdate(params: TaskUpdateParams): Promise<TaskEntity |
       return null;
     }
     
+    // Sanitize inputs
+    const sanitizedTitle = sanitizeInput(title);
+    const sanitizedDescription = sanitizeInput(description || '');
+    
     // Update task
     await dbRequest(
-      `UPDATE tasks \n       SET title = @title, \n           description = @description, \n           dueDate = @dueDate, \n           priority = @priority, \n           completed = @completed, \n           dateModified = GETUTCDATE() \n       WHERE idTask = @idTask AND idUser = @idUser`,
-      { idTask, idUser, title, description, dueDate, priority, completed }
+      `UPDATE tasks \n       SET title = @title, \n           description = @description, \n           status = @status, \n           dateModified = GETUTCDATE() \n       WHERE idTask = @idTask AND idUser = @idUser`,
+      { 
+        idTask, 
+        idUser, 
+        title: sanitizedTitle, 
+        description: sanitizedDescription, 
+        status: status || existingTask.status 
+      }
     );
     
     // Return updated task
     return {
       ...existingTask,
-      title,
-      description,
-      dueDate,
-      priority,
-      completed: completed || false
+      title: sanitizedTitle,
+      description: sanitizedDescription,
+      status: status || existingTask.status,
+      dateModified: new Date()
     };
   } catch (error) {
-    console.error('Error updating task:', error);
+    logger.error('Error updating task:', { error, params });
     throw new Error('Failed to update task');
   }
 }
@@ -121,7 +143,7 @@ export async function taskDelete({ idUser, idTask }: { idUser: number, idTask: n
     
     return true;
   } catch (error) {
-    console.error('Error deleting task:', error);
+    logger.error('Error deleting task:', { error, idUser, idTask });
     throw new Error('Failed to delete task');
   }
 }
