@@ -20,7 +20,7 @@ const router = createBrowserRouter([
   {
     path: '/',
     element: <RootLayout />,
-    errorElement: <ErrorBoundary />,
+    errorElement: <ErrorBoundary children={<NotFoundPage />} />,
     children: [
       {
         index: true,

@@ -20,7 +20,7 @@ export const HomePage = () => {
           <h1 className="text-4xl font-bold text-gray-800">TO DO List</h1>
           <p className="mt-2 text-lg text-gray-600">Organize your life, one task at a time.</p>
           <div className="mt-6 space-x-4">
-            <Button asChild>
+            <Button variant="default" asChild>
               <Link to="/auth/login">Login</Link>
             </Button>
             <Button variant="secondary" asChild>

@@ -23,8 +23,8 @@ export const config = {
     },
   },
   security: {
-    jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
+    jwtSecret: (process.env.JWT_SECRET || 'your-secret-key') as string,
+    jwtExpiresIn: (process.env.JWT_EXPIRES_IN || '1d') as string,
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10'),
   },
   logging: {

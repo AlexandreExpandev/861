@@ -56,7 +56,7 @@ export const CreateTaskForm = ({ onSuccess, onCancel }: CreateTaskFormProps) => 
         <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
-        <Button type="submit" disabled={isPending}>
+        <Button type="submit" variant="default" disabled={isPending}>
           {isPending ? 'Saving...' : 'Save Task'}
         </Button>
       </div>
