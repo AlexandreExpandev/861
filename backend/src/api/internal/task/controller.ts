@@ -12,10 +12,10 @@ import { sanitizeInput } from '../../../utils/security';
 export async function listHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Get user ID from authenticated user
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     // Get tasks from service
-    const tasks = await taskList(userId);
+    const tasks = await taskList(userId!);
 
     // Return success response
     res.json(successResponse(tasks));
@@ -31,13 +31,13 @@ export async function listHandler(req: Request, res: Response, next: NextFunctio
 export async function getHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // Get user ID from authenticated user
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     // Get task ID from request parameters
     const taskId = parseInt(req.params.id);
 
     // Get task from service
-    const task = await taskGet(userId, taskId);
+    const task = await taskGet(userId!, taskId);
 
     // Check if task exists
     if (!task) {
@@ -62,7 +62,7 @@ export async function createHandler(
 ): Promise<void> {
   try {
     // Get user ID from authenticated user
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     // Validate request body
     const schema = z.object({
@@ -82,9 +82,9 @@ export async function createHandler(
     let validatedData;
     try {
       validatedData = schema.parse(req.body);
-    } catch (error) {
-      if (error.name === 'ZodError') {
-        const validationErrors = error.errors.map((err: any) => ({
+    } catch (error: unknown) {
+      if ((error as any).name === 'ZodError') {
+        const validationErrors = (error as any).errors.map((err: any) => ({
           path: err.path.join('.'),
           message: err.message,
         }));
@@ -101,7 +101,7 @@ export async function createHandler(
     };
 
     // Create task using service
-    const task = await taskCreate(userId, sanitizedData);
+    const task = await taskCreate(userId!, sanitizedData);
 
     // Return success response with location header
     res.status(201).location(`/api/internal/tasks/${task.id}`).json(successResponse(task));
@@ -121,13 +121,13 @@ export async function updateHandler(
 ): Promise<void> {
   try {
     // Get user ID from authenticated user
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     // Get task ID from request parameters
     const taskId = parseInt(req.params.id);
 
     // Update task using service
-    const task = await taskUpdate(userId, taskId, req.body);
+    const task = await taskUpdate(userId!, taskId, req.body);
 
     // Check if task exists
     if (!task) {
@@ -152,13 +152,13 @@ export async function deleteHandler(
 ): Promise<void> {
   try {
     // Get user ID from authenticated user
-    const userId = req.user.id;
+    const userId = req.user?.id;
 
     // Get task ID from request parameters
     const taskId = parseInt(req.params.id);
 
     // Delete task using service
-    const success = await taskDelete(userId, taskId);
+    const success = await taskDelete(userId!, taskId);
 
     // Check if task exists
     if (!success) {

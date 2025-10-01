@@ -30,9 +30,9 @@ export async function loginHandler(req: Request, res: Response, next: NextFuncti
 
     // Return success response with token
     res.json(successResponse(result));
-  } catch (error) {
-    if (error.name === 'ZodError') {
-      const validationErrors = error.errors.map((err: any) => ({
+  } catch (error: unknown) {
+    if ((error as any).name === 'ZodError') {
+      const validationErrors = (error as any).errors.map((err: any) => ({
         path: err.path.join('.'),
         message: err.message,
       }));
@@ -62,9 +62,9 @@ export async function registerHandler(
 
     // Return success response with token
     res.status(201).json(successResponse(result));
-  } catch (error) {
-    if (error.name === 'ZodError') {
-      const validationErrors = error.errors.map((err: any) => ({
+  } catch (error: unknown) {
+    if ((error as any).name === 'ZodError') {
+      const validationErrors = (error as any).errors.map((err: any) => ({
         path: err.path.join('.'),
         message: err.message,
       }));

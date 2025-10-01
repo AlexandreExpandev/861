@@ -18,14 +18,21 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
     }
 
     // Verify token
-    const decoded = jwt.verify(token, config.security.jwtSecret);
+    const decoded = jwt.verify(token, config.security.jwtSecret) as {
+      id: number;
+      email: string;
+      name: string;
+    };
 
     // Add user info to request object
     req.user = decoded;
 
     next();
-  } catch (error) {
-    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+  } catch (error: unknown) {
+    if (
+      (error as any).name === 'JsonWebTokenError' ||
+      (error as any).name === 'TokenExpiredError'
+    ) {
       next(new AuthError('Invalid or expired token'));
     } else {
       next(error);

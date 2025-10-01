@@ -16,10 +16,10 @@ export const validationMiddleware = (schema: ZodSchema) => {
       req.body = validatedData;
 
       next();
-    } catch (error) {
+    } catch (error: unknown) {
       // Format Zod validation errors
-      if (error.errors) {
-        const validationErrors = error.errors.map((err: any) => ({
+      if ((error as any).errors) {
+        const validationErrors = (error as any).errors.map((err: any) => ({
           path: err.path.join('.'),
           message: err.message,
         }));

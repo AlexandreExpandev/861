@@ -34,7 +34,9 @@ export const DashboardPage = () => {
           />
         ) : (
           <div className="text-right">
-            <Button onClick={() => setIsCreatingTask(true)}>+ Nova Tarefa</Button>
+            <Button onClick={() => setIsCreatingTask(true)} variant="default">
+              + Nova Tarefa
+            </Button>
           </div>
         )}
       </section>
