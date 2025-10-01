@@ -1,27 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
-import { AnyZodObject, ZodError } from 'zod';
-import { errorResponse } from '../utils/response';
+import { ZodSchema } from 'zod';
+import { ValidationError } from '../utils/errors';
 
 /**
- * @summary Request validation middleware using Zod schemas
- * @param schema Zod validation schema
+ * @summary
+ * Request validation middleware using Zod schemas
  */
-export function validationMiddleware(schema: AnyZodObject) {
+export const validationMiddleware = (schema: ZodSchema) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await schema.parseAsync(req.body);
+      // Validate request body against schema
+      const validatedData = await schema.parseAsync(req.body);
+
+      // Replace request body with validated data
+      req.body = validatedData;
+
       next();
     } catch (error) {
-      if (error instanceof ZodError) {
-        const formattedErrors = error.errors.map((err) => ({
+      // Format Zod validation errors
+      if (error.errors) {
+        const validationErrors = error.errors.map((err: any) => ({
           path: err.path.join('.'),
           message: err.message,
         }));
 
-        res.status(400).json(errorResponse('Validation failed', formattedErrors));
-        return;
+        next(new ValidationError('Validation failed', validationErrors));
+      } else {
+        next(error);
       }
-      next(error);
     }
   };
-}
+};

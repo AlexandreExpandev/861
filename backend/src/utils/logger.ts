@@ -1,26 +1,25 @@
+import winston from 'winston';
 import { config } from '../config';
 
 /**
- * @summary Simple logging utility
+ * @summary
+ * Application logger using Winston
  */
-export const logger = {
-  info: (message: string, data?: any) => {
-    if (config.logging.level === 'info' || config.logging.level === 'debug') {
-      console.log(`[INFO] ${message}`, data ? data : '');
-    }
-  },
-
-  error: (message: string, error?: any) => {
-    console.error(`[ERROR] ${message}`, error ? error : '');
-  },
-
-  debug: (message: string, data?: any) => {
-    if (config.logging.level === 'debug') {
-      console.log(`[DEBUG] ${message}`, data ? data : '');
-    }
-  },
-
-  warn: (message: string, data?: any) => {
-    console.warn(`[WARN] ${message}`, data ? data : '');
-  },
-};
+export const logger = winston.createLogger({
+  level: config.logging.level,
+  format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
+  defaultMeta: { service: 'todo-api' },
+  transports: [
+    // Console transport for all environments
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    }),
+    // File transport for production
+    ...(process.env.NODE_ENV === 'production'
+      ? [
+          new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+          new winston.transports.File({ filename: 'logs/combined.log' }),
+        ]
+      : []),
+  ],
+});

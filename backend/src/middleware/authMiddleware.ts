@@ -1,37 +1,34 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { JwtPayload } from '../services/user/userTypes';
-import { errorResponse } from '../utils/response';
-
-// Extend Express Request type to include user
-declare global {
-  namespace Express {
-    interface Request {
-      user?: JwtPayload;
-    }
-  }
-}
+import { AuthError } from '../utils/errors';
 
 /**
- * @summary Authentication middleware to verify JWT tokens
+ * @summary
+ * Authentication middleware to verify JWT tokens
  */
-export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // Get token from header
-  const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
-
-  if (!token) {
-    res.status(401).json(errorResponse('No token provided'));
-    return;
-  }
-
+export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
+    // Get token from Authorization header
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+      throw new AuthError('No token provided');
+    }
+
     // Verify token
-    const decoded = jwt.verify(token, config.security.jwtSecret) as JwtPayload;
+    const decoded = jwt.verify(token, config.security.jwtSecret);
+
+    // Add user info to request object
     req.user = decoded;
+
     next();
   } catch (error) {
-    res.status(401).json(errorResponse('Invalid token'));
+    if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      next(new AuthError('Invalid or expired token'));
+    } else {
+      next(error);
+    }
   }
-}
+};

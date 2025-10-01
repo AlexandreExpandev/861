@@ -1,25 +1,34 @@
 import { PrismaClient } from '@prisma/client';
-import { config } from '../config';
 
-// Create Prisma client instance
+/**
+ * @summary
+ * Database instance using Prisma ORM
+ */
 export const db = new PrismaClient();
 
 /**
- * @summary Initialize database connection
+ * @summary
+ * Connect to database on startup
  */
-export async function setupDatabase(): Promise<void> {
+export async function connectDatabase(): Promise<void> {
   try {
-    // Test database connection
     await db.$connect();
-    console.log('Database connection established');
-
-    // Register shutdown hooks
-    process.on('beforeExit', async () => {
-      await db.$disconnect();
-      console.log('Database connection closed');
-    });
+    console.log('Database connected successfully');
   } catch (error) {
     console.error('Database connection failed:', error);
     process.exit(1);
+  }
+}
+
+/**
+ * @summary
+ * Disconnect from database on shutdown
+ */
+export async function disconnectDatabase(): Promise<void> {
+  try {
+    await db.$disconnect();
+    console.log('Database disconnected successfully');
+  } catch (error) {
+    console.error('Database disconnection failed:', error);
   }
 }

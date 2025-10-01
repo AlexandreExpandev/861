@@ -7,7 +7,7 @@ const router = Router();
 // Apply authentication middleware to all internal routes
 router.use(authMiddleware);
 
-// Task management routes
+// Task routes
 router.use('/tasks', taskRoutes);
 
 export default router;

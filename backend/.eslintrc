@@ -5,16 +5,22 @@
     "plugin:@typescript-eslint/recommended"
   ],
   "parserOptions": {
-    "ecmaVersion": 2022,
+    "ecmaVersion": 2020,
     "sourceType": "module"
   },
   "rules": {
-    "@typescript-eslint/explicit-function-return-type": "off",
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
-    "no-console": "warn",
     "indent": ["error", 2],
     "quotes": ["error", "single"],
-    "semi": ["error", "always"]
+    "semi": ["error", "always"],
+    "no-unused-vars": "off",
+    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }],
+    "@typescript-eslint/explicit-function-return-type": "off",
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-non-null-assertion": "off"
+  },
+  "env": {
+    "node": true,
+    "es6": true,
+    "jest": true
   }
 }

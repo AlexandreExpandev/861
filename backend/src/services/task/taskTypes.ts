@@ -1,49 +1,49 @@
 /**
- * @interface Task
- * @description Represents a task entity in the system
+ * @summary
+ * Task entity interface
  */
 export interface Task {
   id: number;
   userId: number;
   title: string;
   description: string;
-  dueDate?: Date | null;
-  priority?: TaskPriority;
-  status: string;
-  completed?: boolean;
+  dueDate: Date | null;
+  priority: number;
+  completed: boolean;
+  deleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
- * @enum TaskPriority
- * @description Priority levels for tasks
+ * @summary
+ * Task creation interface
+ */
+export interface TaskCreate {
+  title: string;
+  description: string;
+  dueDate?: string | null;
+  priority: number;
+}
+
+/**
+ * @summary
+ * Task update interface
+ */
+export interface TaskUpdate {
+  title: string;
+  description: string;
+  dueDate?: string | null;
+  priority: number;
+  completed?: boolean;
+}
+
+/**
+ * @summary
+ * Task priority enum
  */
 export enum TaskPriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-}
-
-/**
- * @interface TaskCreateInput
- * @description Input for creating a new task
- */
-export interface TaskCreateInput {
-  userId: number;
-  title: string;
-  description?: string;
-  dueDate?: Date | null;
-  priority?: TaskPriority;
-  status: string;
-}
-
-/**
- * @interface TaskUpdateInput
- * @description Input for updating an existing task
- */
-export interface TaskUpdateInput extends Omit<TaskCreateInput, 'status'> {
-  id: number;
-  status?: string;
-  completed?: boolean;
+  Low = 1,
+  Medium = 2,
+  High = 3,
 }
