@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { Secret } from 'jsonwebtoken';
 import { config } from '../../config';
 import { dbRequest } from '../../database';
 import { LoginParams, RegisterParams, AuthResult } from './authTypes';
@@ -34,7 +34,7 @@ export async function registerUser(params: RegisterParams): Promise<AuthResult> 
     const idUser = result[0].idUser;
 
     // Generate token
-    const token = jwt.sign({ idUser, email, name }, config.security.jwtSecret as jwt.Secret, {
+    const token = jwt.sign({ idUser, email, name }, config.security.jwtSecret as Secret, {
       expiresIn: config.security.jwtExpiration as string | number,
     });
 
@@ -80,7 +80,7 @@ export async function loginUser(params: LoginParams): Promise<AuthResult | null>
     // Generate token
     const token = jwt.sign(
       { idUser: user.idUser, email: user.email, name: user.name },
-      config.security.jwtSecret as jwt.Secret,
+      config.security.jwtSecret as Secret,
       { expiresIn: config.security.jwtExpiration as string | number }
     );
 
