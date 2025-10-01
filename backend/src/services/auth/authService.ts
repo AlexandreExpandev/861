@@ -34,9 +34,8 @@ export async function registerUser(params: RegisterParams): Promise<AuthResult> 
     const idUser = result[0].idUser;
 
     // Generate token
-    const secret: Secret = config.security.jwtSecret as Secret;
-    const token = jwt.sign({ idUser, email, name }, secret, {
-      expiresIn: config.security.jwtExpiration,
+    const token = jwt.sign({ idUser, email, name }, config.security.jwtSecret!, {
+      expiresIn: config.security.jwtExpiration!,
     });
 
     return {
@@ -79,10 +78,13 @@ export async function loginUser(params: LoginParams): Promise<AuthResult | null>
     }
 
     // Generate token
-    const secret: Secret = config.security.jwtSecret as Secret;
-    const token = jwt.sign({ idUser: user.idUser, email: user.email, name: user.name }, secret, {
-      expiresIn: config.security.jwtExpiration,
-    });
+    const token = jwt.sign(
+      { idUser: user.idUser, email: user.email, name: user.name },
+      config.security.jwtSecret!,
+      {
+        expiresIn: config.security.jwtExpiration!,
+      }
+    );
 
     return {
       user: {
