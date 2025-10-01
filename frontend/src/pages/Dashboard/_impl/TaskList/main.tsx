@@ -1,6 +1,6 @@
 import { LoadingSpinner } from '@/core/components/LoadingSpinner';
 import { useTaskList } from '@/domain/task';
-import type { Task as TaskType } from '@/domain/task/types';
+import type { Task } from '@/domain/task/types';
 
 /**
  * @component TaskList
