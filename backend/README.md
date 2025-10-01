@@ -1,54 +1,68 @@
-# TO DO List API
+# TODO List API
 
-A RESTful API for managing to-do lists built with Node.js, Express, TypeScript, and SQL Server.
+A RESTful API for managing tasks in a TODO list application.
 
 ## Features
 
 - User authentication (register, login)
 - Task management (create, read, update, delete)
-- Task prioritization
-- Due date tracking
+- Task prioritization and due dates
+- Secure API with JWT authentication
 
 ## Tech Stack
 
-- **Runtime**: Node.js
-- **Framework**: Express.js
-- **Language**: TypeScript
-- **Database**: SQL Server
-- **Authentication**: JWT
-- **Validation**: Zod
+- Node.js
+- Express.js
+- TypeScript
+- SQL Server
+- Prisma ORM
+- JWT Authentication
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14+)
-- SQL Server
+- Node.js (v14 or higher)
+- SQL Server instance
+- npm or yarn
 
 ### Installation
 
 1. Clone the repository
-   ```
-   git clone https://github.com/yourusername/todolist-api.git
-   cd todolist-api
-   ```
+
+```bash
+git clone <repository-url>
+cd todo-list-api
+```
 
 2. Install dependencies
-   ```
-   npm install
-   ```
 
-3. Create a `.env` file based on `.env.example`
-   ```
-   cp .env.example .env
-   ```
+```bash
+npm install
+# or
+yarn install
+```
 
-4. Update the `.env` file with your database credentials and other settings
+3. Set up environment variables
+
+```bash
+cp .env.example .env
+# Edit .env with your configuration
+```
+
+4. Set up the database
+
+```bash
+npx prisma migrate dev --name init
+```
 
 5. Start the development server
-   ```
-   npm run dev
-   ```
+
+```bash
+npm run dev
+# or
+yarn dev
+```
 
 ## API Endpoints
 
@@ -60,25 +74,35 @@ A RESTful API for managing to-do lists built with Node.js, Express, TypeScript, 
 ### Tasks
 
 - `GET /api/internal/tasks` - Get all tasks
-- `POST /api/internal/tasks` - Create a new task
 - `GET /api/internal/tasks/:id` - Get a specific task
+- `POST /api/internal/tasks` - Create a new task
 - `PUT /api/internal/tasks/:id` - Update a task
 - `DELETE /api/internal/tasks/:id` - Delete a task
 
-## Project Structure
+## Development
 
+### Build
+
+```bash
+npm run build
+# or
+yarn build
 ```
-src/
-├── api/                    # API controllers
-│   ├── external/           # Public endpoints
-│   └── internal/           # Authenticated endpoints
-├── config/                 # Application configuration
-├── database/               # Database connection and queries
-├── middleware/             # Express middleware
-├── routes/                 # Route definitions
-├── services/               # Business logic
-├── utils/                  # Utility functions
-└── server.ts              # Application entry point
+
+### Lint
+
+```bash
+npm run lint
+# or
+yarn lint
+```
+
+### Test
+
+```bash
+npm test
+# or
+yarn test
 ```
 
 ## License

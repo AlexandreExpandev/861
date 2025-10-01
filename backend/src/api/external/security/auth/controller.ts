@@ -1,30 +1,35 @@
 import { Request, Response, NextFunction } from 'express';
-import { loginUser, registerUser } from '../../../../services/auth/authService';
-import { errorResponse, successResponse } from '../../../../middleware/crud';
-import { validationMiddleware } from '../../../../middleware/validationMiddleware';
-import { loginSchema, registerSchema } from '../../../../services/auth/authValidation';
+import { z } from 'zod';
+import { userLogin, userRegister } from '../../../../services/user';
+import { errorResponse, successResponse } from '../../../../utils/response';
 
 /**
  * @summary Handle user login
  */
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Validate request body
-    const validatedData = loginSchema.parse(req.body);
+    const schema = z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+    });
 
-    const result = await loginUser(validatedData);
+    const result = schema.safeParse(req.body);
 
-    if (!result) {
+    if (!result.success) {
+      res.status(400).json(errorResponse('Invalid credentials'));
+      return;
+    }
+
+    const { email, password } = result.data;
+    const loginResult = await userLogin(email, password);
+
+    if (!loginResult) {
       res.status(401).json(errorResponse('Invalid credentials'));
       return;
     }
 
-    res.json(successResponse(result));
+    res.json(successResponse(loginResult));
   } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json(errorResponse('Validation failed', error.errors));
-      return;
-    }
     next(error);
   }
 }
@@ -38,18 +43,25 @@ export async function registerHandler(
   next: NextFunction
 ): Promise<void> {
   try {
-    // Validate request body
-    const validatedData = registerSchema.parse(req.body);
+    const schema = z.object({
+      name: z.string().min(2),
+      email: z.string().email(),
+      password: z.string().min(6),
+    });
 
-    const result = await registerUser(validatedData);
+    const result = schema.safeParse(req.body);
 
-    res.status(201).json(successResponse(result));
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json(errorResponse('Validation failed', error.errors));
+    if (!result.success) {
+      res.status(400).json(errorResponse('Invalid registration data'));
       return;
     }
-    if (error.code === 'EMAIL_EXISTS') {
+
+    const { name, email, password } = result.data;
+    const user = await userRegister(name, email, password);
+
+    res.status(201).json(successResponse(user));
+  } catch (error: any) {
+    if (error.message === 'EmailAlreadyExists') {
       res.status(409).json(errorResponse('Email already in use'));
       return;
     }

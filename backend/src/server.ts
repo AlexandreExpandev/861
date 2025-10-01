@@ -6,7 +6,7 @@ import { config } from './config';
 import { errorMiddleware } from './middleware/errorMiddleware';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware';
 import routes from './routes';
-import { setupDatabase } from './database';
+import { setupDatabase } from './instances/database';
 
 const app = express();
 
@@ -33,7 +33,7 @@ app.use(notFoundMiddleware);
 // Error handling
 app.use(errorMiddleware);
 
-// Initialize database
+// Initialize database connection
 setupDatabase();
 
 // Graceful shutdown
@@ -47,7 +47,9 @@ process.on('SIGTERM', () => {
 
 // Server startup
 const server = app.listen(config.api.port, () => {
-  console.log(`Server running on port ${config.api.port} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(
+    `Server running on port ${config.api.port} in ${process.env.NODE_ENV || 'development'} mode`
+  );
 });
 
 export default server;

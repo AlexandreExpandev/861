@@ -1,42 +1,26 @@
-import winston from 'winston';
 import { config } from '../config';
 
 /**
- * @summary Application logger
+ * @summary Simple logging utility
  */
-export const logger = winston.createLogger({
-  level: config.logging.level,
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'todolist-api' },
-  transports: [
-    // Console transport
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.simple()
-      )
-    }),
-    // File transport for errors
-    new winston.transports.File({ 
-      filename: 'logs/error.log', 
-      level: 'error' 
-    }),
-    // File transport for all logs
-    new winston.transports.File({ 
-      filename: 'logs/combined.log' 
-    })
-  ]
-});
+export const logger = {
+  info: (message: string, data?: any) => {
+    if (config.logging.level === 'info' || config.logging.level === 'debug') {
+      console.log(`[INFO] ${message}`, data ? data : '');
+    }
+  },
 
-// If we're not in production, also log to the console with colorized output
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
+  error: (message: string, error?: any) => {
+    console.error(`[ERROR] ${message}`, error ? error : '');
+  },
+
+  debug: (message: string, data?: any) => {
+    if (config.logging.level === 'debug') {
+      console.log(`[DEBUG] ${message}`, data ? data : '');
+    }
+  },
+
+  warn: (message: string, data?: any) => {
+    console.warn(`[WARN] ${message}`, data ? data : '');
+  },
+};

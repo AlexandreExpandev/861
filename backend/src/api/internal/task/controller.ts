@@ -1,35 +1,53 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { CrudController, errorResponse, successResponse } from '../../../middleware/crud';
-import {
-  taskCreate,
-  taskDelete,
-  taskGet,
-  taskList,
-  taskUpdate,
-} from '../../../services/task/taskService';
-import { taskCreateSchema } from '../../../services/task/taskValidation';
-
-const securable = 'TASK';
+import { taskCreate, taskGet, taskList, taskUpdate, taskDelete } from '../../../services/task';
+import { errorResponse, successResponse } from '../../../utils/response';
 
 /**
  * @summary List all tasks for the authenticated user
  */
 export async function listHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const operation = new CrudController([{ securable, permission: 'READ' }]);
-
-  const [validated, error] = await operation.read(req);
-
-  if (!validated) {
-    return next(error);
-  }
-
   try {
-    const data = await taskList({
-      idUser: validated.credential.idUser,
-    });
+    const userId = req.user?.id;
 
-    res.json(successResponse(data));
+    if (!userId) {
+      res.status(401).json(errorResponse('Unauthorized'));
+      return;
+    }
+
+    const tasks = await taskList(userId);
+    res.json(successResponse(tasks));
+  } catch (error: any) {
+    next(error);
+  }
+}
+
+/**
+ * @summary Get a specific task by ID
+ */
+export async function getHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  try {
+    const userId = req.user?.id;
+    const taskId = parseInt(req.params.id);
+
+    if (!userId) {
+      res.status(401).json(errorResponse('Unauthorized'));
+      return;
+    }
+
+    if (isNaN(taskId)) {
+      res.status(400).json(errorResponse('Invalid task ID'));
+      return;
+    }
+
+    const task = await taskGet(userId, taskId);
+
+    if (!task) {
+      res.status(404).json(errorResponse('Task not found'));
+      return;
+    }
+
+    res.json(successResponse(task));
   } catch (error: any) {
     next(error);
   }
@@ -43,66 +61,23 @@ export async function createHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const operation = new CrudController([{ securable, permission: 'CREATE' }]);
-
-  const [validated, error] = await operation.create(req);
-
-  if (!validated) {
-    return next(error);
-  }
-
   try {
-    // Validate request body against schema
-    const validatedData = taskCreateSchema.parse(validated.body);
+    const userId = req.user?.id;
 
-    const data = await taskCreate({
-      idUser: validated.credential.idUser,
-      ...validatedData,
-    });
-
-    // Set Location header for the newly created resource
-    res.location(`/api/internal/tasks/${data.idTask}`);
-
-    // Return 201 Created with the task data
-    res.status(201).json(successResponse(data));
-    return;
-  } catch (error: any) {
-    if (error.name === 'ZodError') {
-      res.status(400).json(errorResponse('Validation failed', error.errors));
-      return;
-    }
-    next(error);
-  }
-}
-
-/**
- * @summary Get a specific task by ID
- */
-export async function getHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const paramsSchema = z.object({
-    id: z.coerce.number(),
-  });
-
-  const operation = new CrudController([{ securable, permission: 'READ' }]);
-
-  const [validated, error] = await operation.read(req, paramsSchema);
-
-  if (!validated) {
-    return next(error);
-  }
-
-  try {
-    const data = await taskGet({
-      idUser: validated.credential.idUser,
-      idTask: validated.params.id,
-    });
-
-    if (!data) {
-      res.status(404).json(errorResponse('Task not found'));
+    if (!userId) {
+      res.status(401).json(errorResponse('Unauthorized'));
       return;
     }
 
-    res.json(successResponse(data));
+    const task = await taskCreate({
+      userId,
+      title: req.body.title,
+      description: req.body.description,
+      dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+      priority: req.body.priority,
+    });
+
+    res.status(201).json(successResponse(task));
   } catch (error: any) {
     next(error);
   }
@@ -116,31 +91,36 @@ export async function updateHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const paramsSchema = z.object({
-    id: z.coerce.number(),
-  });
-
-  const operation = new CrudController([{ securable, permission: 'UPDATE' }]);
-
-  const [validated, error] = await operation.update(req, paramsSchema);
-
-  if (!validated) {
-    return next(error);
-  }
-
   try {
-    const data = await taskUpdate({
-      idUser: validated.credential.idUser,
-      idTask: validated.params.id,
-      ...validated.body,
+    const userId = req.user?.id;
+    const taskId = parseInt(req.params.id);
+
+    if (!userId) {
+      res.status(401).json(errorResponse('Unauthorized'));
+      return;
+    }
+
+    if (isNaN(taskId)) {
+      res.status(400).json(errorResponse('Invalid task ID'));
+      return;
+    }
+
+    const task = await taskUpdate({
+      id: taskId,
+      userId,
+      title: req.body.title,
+      description: req.body.description,
+      dueDate: req.body.dueDate ? new Date(req.body.dueDate) : null,
+      priority: req.body.priority,
+      completed: req.body.completed,
     });
 
-    if (!data) {
+    if (!task) {
       res.status(404).json(errorResponse('Task not found'));
       return;
     }
 
-    res.json(successResponse(data));
+    res.json(successResponse(task));
   } catch (error: any) {
     next(error);
   }
@@ -154,30 +134,28 @@ export async function deleteHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  const paramsSchema = z.object({
-    id: z.coerce.number(),
-  });
-
-  const operation = new CrudController([{ securable, permission: 'DELETE' }]);
-
-  const [validated, error] = await operation.delete(req, paramsSchema);
-
-  if (!validated) {
-    return next(error);
-  }
-
   try {
-    const success = await taskDelete({
-      idUser: validated.credential.idUser,
-      idTask: validated.params.id,
-    });
+    const userId = req.user?.id;
+    const taskId = parseInt(req.params.id);
+
+    if (!userId) {
+      res.status(401).json(errorResponse('Unauthorized'));
+      return;
+    }
+
+    if (isNaN(taskId)) {
+      res.status(400).json(errorResponse('Invalid task ID'));
+      return;
+    }
+
+    const success = await taskDelete(userId, taskId);
 
     if (!success) {
       res.status(404).json(errorResponse('Task not found'));
       return;
     }
 
-    res.json(successResponse({ deleted: true }));
+    res.json(successResponse({ message: 'Task deleted successfully' }));
   } catch (error: any) {
     next(error);
   }
