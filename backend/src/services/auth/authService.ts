@@ -35,7 +35,7 @@ export async function registerUser(params: RegisterParams): Promise<AuthResult> 
 
     // Generate token
     const token = jwt.sign({ idUser, email, name }, config.security.jwtSecret as Secret, {
-      expiresIn: config.security.jwtExpiration as string | number,
+      expiresIn: config.security.jwtExpiration,
     });
 
     return {
@@ -81,7 +81,7 @@ export async function loginUser(params: LoginParams): Promise<AuthResult | null>
     const token = jwt.sign(
       { idUser: user.idUser, email: user.email, name: user.name },
       config.security.jwtSecret as Secret,
-      { expiresIn: config.security.jwtExpiration as string | number }
+      { expiresIn: config.security.jwtExpiration }
     );
 
     return {
