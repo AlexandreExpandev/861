@@ -6,44 +6,36 @@ export interface Task {
   id: number;
   userId: number;
   title: string;
-  description: string;
-  dueDate: Date | null;
-  priority: number;
+  description: string | null;
+  dueDate: string | null;
+  priority: string;
   completed: boolean;
-  deleted: boolean;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
  * @summary
- * Task creation interface
+ * Task creation parameters
  */
-export interface TaskCreate {
+export interface TaskCreateParams {
+  userId: number;
   title: string;
-  description: string;
-  dueDate?: string | null;
-  priority: number;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
 }
 
 /**
  * @summary
- * Task update interface
+ * Task update parameters
  */
-export interface TaskUpdate {
-  title: string;
-  description: string;
-  dueDate?: string | null;
-  priority: number;
+export interface TaskUpdateParams {
+  userId: number;
+  taskId: number;
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
   completed?: boolean;
-}
-
-/**
- * @summary
- * Task priority enum
- */
-export enum TaskPriority {
-  Low = 1,
-  Medium = 2,
-  High = 3,
 }

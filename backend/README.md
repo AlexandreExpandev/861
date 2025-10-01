@@ -1,6 +1,6 @@
-# TODO List API
+# Todo List API
 
-A RESTful API for managing TODO lists built with Node.js, Express, TypeScript, and PostgreSQL.
+A RESTful API for managing todo lists built with Node.js, Express, TypeScript, and SQL Server.
 
 ## Features
 
@@ -11,20 +11,21 @@ A RESTful API for managing TODO lists built with Node.js, Express, TypeScript, a
 
 ## Tech Stack
 
-- Node.js
-- Express.js
-- TypeScript
-- PostgreSQL
-- Prisma ORM
-- JWT Authentication
-- Zod Validation
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Language**: TypeScript
+- **Database**: SQL Server
+- **Authentication**: JWT
+- **Validation**: Zod
+- **ORM**: Native SQL with mssql package
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js (v14+)
-- PostgreSQL
+- SQL Server (local or remote)
+- npm or yarn
 
 ### Installation
 
@@ -39,18 +40,18 @@ A RESTful API for managing TODO lists built with Node.js, Express, TypeScript, a
    npm install
    ```
 
-3. Set up environment variables
+3. Create a `.env` file based on `.env.example`
    ```bash
    cp .env.example .env
-   # Edit .env with your database credentials and other settings
    ```
 
 4. Set up the database
-   ```bash
-   npm run prisma:migrate
-   ```
+   - Create a new SQL Server database
+   - Update the `.env` file with your database credentials
 
-5. Start the development server
+5. Run database migrations (if applicable)
+
+6. Start the development server
    ```bash
    npm run dev
    ```
@@ -64,25 +65,49 @@ A RESTful API for managing TODO lists built with Node.js, Express, TypeScript, a
 
 ### Tasks
 
-- `GET /api/internal/tasks` - Get all tasks
+- `GET /api/internal/tasks` - Get all tasks for the authenticated user
 - `GET /api/internal/tasks/:id` - Get a specific task
 - `POST /api/internal/tasks` - Create a new task
 - `PUT /api/internal/tasks/:id` - Update a task
 - `DELETE /api/internal/tasks/:id` - Delete a task
 
+## Project Structure
+
+```
+src/
+├── api/                  # API controllers
+│   ├── external/         # Public endpoints
+│   └── internal/         # Authenticated endpoints
+├── config/               # Application configuration
+├── instances/            # Service instances
+├── middleware/           # Express middleware
+├── routes/               # Route definitions
+├── services/             # Business logic
+├── types/                # TypeScript type definitions
+├── utils/                # Utility functions
+└── server.ts            # Application entry point
+```
+
 ## Development
 
-### Scripts
+### Build
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm test` - Run tests
-- `npm run prisma:generate` - Generate Prisma client
-- `npm run prisma:migrate` - Run database migrations
-- `npm run prisma:studio` - Open Prisma Studio
+```bash
+npm run build
+```
+
+### Run Tests
+
+```bash
+npm test
+```
+
+### Linting
+
+```bash
+npm run lint
+```
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.

@@ -3,23 +3,33 @@ import { config } from '../config';
 
 /**
  * @summary
- * Application logger using Winston
+ * Application logger configuration
  */
 export const logger = winston.createLogger({
   level: config.logging.level,
   format: winston.format.combine(winston.format.timestamp(), winston.format.json()),
   defaultMeta: { service: 'todo-api' },
   transports: [
-    // Console transport for all environments
+    // Console transport for development
     new winston.transports.Console({
       format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
     }),
     // File transport for production
-    ...(process.env.NODE_ENV === 'production'
-      ? [
-          new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-          new winston.transports.File({ filename: 'logs/combined.log' }),
-        ]
-      : []),
+    new winston.transports.File({
+      filename: 'logs/error.log',
+      level: 'error',
+    }),
+    new winston.transports.File({
+      filename: 'logs/combined.log',
+    }),
   ],
 });
+
+// Simplified logging in development environment
+if (process.env.NODE_ENV !== 'production') {
+  logger.add(
+    new winston.transports.Console({
+      format: winston.format.combine(winston.format.colorize(), winston.format.simple()),
+    })
+  );
+}

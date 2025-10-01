@@ -1,20 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { userLogin, userRegister } from '../../../../services/user';
-import { successResponse } from '../../../../utils/responses';
-import { ValidationError, AuthError } from '../../../../utils/errors';
-
-// Validation schemas
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
+import { errorResponse, successResponse } from '../../../../middleware/crud';
+import { loginUser, registerUser } from '../../../../services/auth/authService';
 
 /**
  * @summary
@@ -22,25 +9,35 @@ const registerSchema = z.object({
  */
 export async function loginHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    // Validate request body
+    const loginSchema = z.object({
+      email: z.string().email(),
+      password: z.string().min(6),
+    });
+
     const validatedData = await loginSchema.parseAsync(req.body);
 
-    // Attempt login
-    const result = await userLogin(validatedData.email, validatedData.password);
+    const result = await loginUser({
+      email: validatedData.email,
+      password: validatedData.password,
+    });
 
-    // Return success response with token
-    res.json(successResponse(result));
-  } catch (error: unknown) {
-    if ((error as any).name === 'ZodError') {
-      const validationErrors = (error as any).errors.map((err: any) => ({
-        path: err.path.join('.'),
-        message: err.message,
-      }));
-
-      next(new ValidationError('Validation failed', validationErrors));
-    } else {
-      next(error);
+    if (!result.success) {
+      return res.status(401).json(errorResponse(result.message || 'Invalid credentials'));
     }
+
+    res.json(
+      successResponse({
+        token: result.token,
+        user: result.user,
+      })
+    );
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res
+        .status(422)
+        .json(errorResponse('Validation failed', 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
   }
 }
 
@@ -54,24 +51,36 @@ export async function registerHandler(
   next: NextFunction
 ): Promise<void> {
   try {
-    // Validate request body
+    const registerSchema = z.object({
+      name: z.string().min(2).max(100),
+      email: z.string().email(),
+      password: z.string().min(6).max(100),
+    });
+
     const validatedData = await registerSchema.parseAsync(req.body);
 
-    // Register new user
-    const result = await userRegister(validatedData);
+    const result = await registerUser({
+      name: validatedData.name,
+      email: validatedData.email,
+      password: validatedData.password,
+    });
 
-    // Return success response with token
-    res.status(201).json(successResponse(result));
-  } catch (error: unknown) {
-    if ((error as any).name === 'ZodError') {
-      const validationErrors = (error as any).errors.map((err: any) => ({
-        path: err.path.join('.'),
-        message: err.message,
-      }));
-
-      next(new ValidationError('Validation failed', validationErrors));
-    } else {
-      next(error);
+    if (!result.success) {
+      return res.status(400).json(errorResponse(result.message || 'Registration failed'));
     }
+
+    res.status(201).json(
+      successResponse({
+        message: 'User registered successfully',
+        user: result.user,
+      })
+    );
+  } catch (error: any) {
+    if (error.name === 'ZodError') {
+      return res
+        .status(422)
+        .json(errorResponse('Validation failed', 'VALIDATION_ERROR', error.errors));
+    }
+    next(error);
   }
 }

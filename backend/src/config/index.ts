@@ -1,13 +1,14 @@
 /**
  * @summary
  * Application configuration settings loaded from environment variables
+ * with sensible defaults for development environments.
  */
 export const config = {
   database: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '1433'),
     user: process.env.DB_USER || 'sa',
-    password: process.env.DB_PASSWORD || '',
+    password: process.env.DB_PASSWORD || 'YourStrong@Passw0rd',
     database: process.env.DB_NAME || 'todo_list',
     options: {
       encrypt: process.env.DB_ENCRYPT === 'true',
@@ -22,8 +23,8 @@ export const config = {
     },
   },
   security: {
-    jwtSecret: (process.env.JWT_SECRET || 'todo-list-secret-key') as string,
-    jwtExpiresIn: (process.env.JWT_EXPIRES_IN || '1d') as string,
+    jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1d',
     bcryptRounds: parseInt(process.env.BCRYPT_ROUNDS || '10'),
   },
   logging: {

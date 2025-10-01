@@ -1,27 +1,20 @@
-import { db } from '../../instances/database';
-import { Task, TaskCreate, TaskUpdate } from './taskTypes';
-import { NotFoundError } from '../../utils/errors';
+import { dbRequest } from '../../utils/database';
+import { Task } from './taskTypes';
 
 /**
  * @summary
  * Get all tasks for a specific user
- *
- * @param userId User ID
- * @returns Array of tasks
  */
-export async function taskList(userId: number): Promise<Task[]> {
+export async function taskList({ userId }: { userId: number }): Promise<Task[]> {
   try {
-    // Get all tasks for the user
-    const tasks = await db.task.findMany({
-      where: {
-        userId,
-        deleted: false,
-      },
-      orderBy: [{ priority: 'desc' }, { dueDate: 'asc' }],
-    });
+    const tasks = await dbRequest(
+      'SELECT id, title, description, dueDate, priority, completed, createdAt, updatedAt FROM tasks WHERE userId = @userId AND deleted = 0 ORDER BY dueDate ASC',
+      { userId }
+    );
 
     return tasks;
   } catch (error) {
+    console.error('Error listing tasks:', error);
     throw error;
   }
 }
@@ -29,24 +22,23 @@ export async function taskList(userId: number): Promise<Task[]> {
 /**
  * @summary
  * Get a specific task by ID
- *
- * @param userId User ID
- * @param taskId Task ID
- * @returns Task or null if not found
  */
-export async function taskGet(userId: number, taskId: number): Promise<Task | null> {
+export async function taskGet({
+  userId,
+  taskId,
+}: {
+  userId: number;
+  taskId: number;
+}): Promise<Task | null> {
   try {
-    // Get task by ID for the specific user
-    const task = await db.task.findFirst({
-      where: {
-        id: taskId,
-        userId,
-        deleted: false,
-      },
-    });
+    const tasks = await dbRequest(
+      'SELECT id, title, description, dueDate, priority, completed, createdAt, updatedAt FROM tasks WHERE id = @taskId AND userId = @userId AND deleted = 0',
+      { userId, taskId }
+    );
 
-    return task;
+    return tasks.length > 0 ? tasks[0] : null;
   } catch (error) {
+    console.error('Error getting task:', error);
     throw error;
   }
 }
@@ -54,36 +46,49 @@ export async function taskGet(userId: number, taskId: number): Promise<Task | nu
 /**
  * @summary
  * Create a new task
- *
- * @param userId User ID
- * @param taskData Task data
- * @returns Created task
  */
-export async function taskCreate(userId: number, taskData: TaskCreate): Promise<Task> {
+export async function taskCreate({
+  userId,
+  title,
+  description,
+  dueDate,
+  priority,
+}: {
+  userId: number;
+  title: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+}): Promise<Task> {
   try {
-    // Performance monitoring start time
-    const startTime = Date.now();
-
-    // Create new task with default status as 'Pendente'
-    const task = await db.task.create({
-      data: {
+    const result = await dbRequest(
+      `INSERT INTO tasks (userId, title, description, dueDate, priority) 
+       VALUES (@userId, @title, @description, @dueDate, @priority);
+       SELECT SCOPE_IDENTITY() AS id;`,
+      {
         userId,
-        title: taskData.title,
-        description: taskData.description || '',
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-        priority: taskData.priority || 2,
-        completed: false, // Default status is 'Pendente' (not completed)
-        deleted: false,
-      },
-    });
+        title,
+        description: description || null,
+        dueDate: dueDate || null,
+        priority: priority || 'medium',
+      }
+    );
 
-    // Performance monitoring end time
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    console.log(`Task creation completed in ${duration}ms`);
+    const taskId = result[0].id;
 
-    return task;
+    return {
+      id: taskId,
+      userId,
+      title,
+      description: description || null,
+      dueDate: dueDate || null,
+      priority: priority || 'medium',
+      completed: false,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
   } catch (error) {
+    console.error('Error creating task:', error);
     throw error;
   }
 }
@@ -91,45 +96,77 @@ export async function taskCreate(userId: number, taskData: TaskCreate): Promise<
 /**
  * @summary
  * Update an existing task
- *
- * @param userId User ID
- * @param taskId Task ID
- * @param taskData Task data
- * @returns Updated task or null if not found
  */
-export async function taskUpdate(
-  userId: number,
-  taskId: number,
-  taskData: TaskUpdate
-): Promise<Task | null> {
+export async function taskUpdate({
+  userId,
+  taskId,
+  title,
+  description,
+  dueDate,
+  priority,
+  completed,
+}: {
+  userId: number;
+  taskId: number;
+  title?: string;
+  description?: string;
+  dueDate?: string;
+  priority?: string;
+  completed?: boolean;
+}): Promise<Task | null> {
   try {
-    // Check if task exists and belongs to user
-    const existingTask = await db.task.findFirst({
-      where: {
-        id: taskId,
-        userId,
-        deleted: false,
-      },
-    });
+    // First check if the task exists and belongs to the user
+    const existingTask = await taskGet({ userId, taskId });
 
     if (!existingTask) {
       return null;
     }
 
-    // Update task
-    const updatedTask = await db.task.update({
-      where: { id: taskId },
-      data: {
-        title: taskData.title,
-        description: taskData.description,
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-        priority: taskData.priority,
-        completed: taskData.completed !== undefined ? taskData.completed : existingTask.completed,
-      },
-    });
+    // Build update query dynamically based on provided fields
+    let updateFields = [];
+    const params: any = { userId, taskId };
 
-    return updatedTask;
+    if (title !== undefined) {
+      updateFields.push('title = @title');
+      params.title = title;
+    }
+
+    if (description !== undefined) {
+      updateFields.push('description = @description');
+      params.description = description;
+    }
+
+    if (dueDate !== undefined) {
+      updateFields.push('dueDate = @dueDate');
+      params.dueDate = dueDate;
+    }
+
+    if (priority !== undefined) {
+      updateFields.push('priority = @priority');
+      params.priority = priority;
+    }
+
+    if (completed !== undefined) {
+      updateFields.push('completed = @completed');
+      params.completed = completed;
+    }
+
+    updateFields.push('updatedAt = GETUTCDATE()');
+
+    if (updateFields.length === 0) {
+      return existingTask; // Nothing to update
+    }
+
+    await dbRequest(
+      `UPDATE tasks SET ${updateFields.join(', ')} 
+       WHERE id = @taskId AND userId = @userId AND deleted = 0`,
+      params
+    );
+
+    // Get the updated task
+    return await taskGet({ userId, taskId });
   } catch (error) {
+    console.error('Error updating task:', error);
     throw error;
   }
 }
@@ -137,34 +174,30 @@ export async function taskUpdate(
 /**
  * @summary
  * Delete a task (soft delete)
- *
- * @param userId User ID
- * @param taskId Task ID
- * @returns True if deleted, false if not found
  */
-export async function taskDelete(userId: number, taskId: number): Promise<boolean> {
+export async function taskDelete({
+  userId,
+  taskId,
+}: {
+  userId: number;
+  taskId: number;
+}): Promise<boolean> {
   try {
-    // Check if task exists and belongs to user
-    const existingTask = await db.task.findFirst({
-      where: {
-        id: taskId,
-        userId,
-        deleted: false,
-      },
-    });
+    // First check if the task exists and belongs to the user
+    const existingTask = await taskGet({ userId, taskId });
 
     if (!existingTask) {
       return false;
     }
 
-    // Soft delete task
-    await db.task.update({
-      where: { id: taskId },
-      data: { deleted: true },
-    });
+    await dbRequest(
+      'UPDATE tasks SET deleted = 1, updatedAt = GETUTCDATE() WHERE id = @taskId AND userId = @userId',
+      { userId, taskId }
+    );
 
     return true;
   } catch (error) {
+    console.error('Error deleting task:', error);
     throw error;
   }
 }

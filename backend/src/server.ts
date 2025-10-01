@@ -6,6 +6,7 @@ import { config } from './config';
 import { errorMiddleware } from './middleware/errorMiddleware';
 import { notFoundMiddleware } from './middleware/notFoundMiddleware';
 import routes from './routes';
+import { setupDatabase } from './instances/database';
 
 const app = express();
 
@@ -31,6 +32,9 @@ app.use(notFoundMiddleware);
 
 // Error handling
 app.use(errorMiddleware);
+
+// Initialize database connection
+setupDatabase();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {

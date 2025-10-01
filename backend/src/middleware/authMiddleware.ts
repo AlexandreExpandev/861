@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { config } from '../config';
-import { AuthError } from '../utils/errors';
+import { UserPayload } from '../services/auth/authTypes';
 
 /**
  * @summary
- * Authentication middleware to verify JWT tokens
+ * Authentication middleware that verifies JWT tokens and
+ * attaches user information to the request object.
  */
 export const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
   try {
@@ -14,28 +15,32 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction):
     const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
-      throw new AuthError('No token provided');
+      res.status(401).json({
+        success: false,
+        error: {
+          code: 'UNAUTHORIZED',
+          message: 'Authentication token is required',
+        },
+        timestamp: new Date().toISOString(),
+      });
+      return;
     }
 
     // Verify token
-    const decoded = jwt.verify(token, config.security.jwtSecret) as {
-      id: number;
-      email: string;
-      name: string;
-    };
+    const decoded = jwt.verify(token, config.security.jwtSecret) as UserPayload;
 
-    // Add user info to request object
+    // Attach user info to request
     req.user = decoded;
 
     next();
-  } catch (error: unknown) {
-    if (
-      (error as any).name === 'JsonWebTokenError' ||
-      (error as any).name === 'TokenExpiredError'
-    ) {
-      next(new AuthError('Invalid or expired token'));
-    } else {
-      next(error);
-    }
+  } catch (error) {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired token',
+      },
+      timestamp: new Date().toISOString(),
+    });
   }
 };

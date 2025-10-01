@@ -1,26 +1,28 @@
 import { z } from 'zod';
-import { TaskPriority } from './taskTypes';
 
 /**
  * @summary
  * Validation schema for task creation
  */
 export const createTaskSchema = z.object({
-  title: z.string().min(1, 'Title is required').max(255, 'Title must be 255 characters or less'),
-  description: z.string().max(1000, 'Description must be 1000 characters or less').default(''),
-  dueDate: z.string().datetime({ message: 'Invalid date format' }).nullable().optional(),
-  priority: z
-    .number()
-    .int()
-    .min(1, 'Priority must be between 1 and 3')
-    .max(3, 'Priority must be between 1 and 3')
-    .default(TaskPriority.Medium),
+  title: z.string().min(1, 'Title is required').max(100, 'Title cannot exceed 100 characters'),
+  description: z.string().max(500, 'Description cannot exceed 500 characters').optional(),
+  dueDate: z.string().optional(),
+  priority: z.enum(['low', 'medium', 'high']).default('medium'),
 });
 
 /**
  * @summary
  * Validation schema for task updates
  */
-export const updateTaskSchema = createTaskSchema.extend({
+export const updateTaskSchema = createTaskSchema.partial().extend({
   completed: z.boolean().optional(),
+});
+
+/**
+ * @summary
+ * Validation schema for task ID parameter
+ */
+export const taskIdSchema = z.object({
+  id: z.coerce.number().positive('Task ID must be a positive number'),
 });

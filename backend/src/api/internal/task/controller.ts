@@ -1,26 +1,42 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { taskCreate, taskGet, taskList, taskUpdate, taskDelete } from '../../../services/task';
-import { successResponse } from '../../../utils/responses';
-import { NotFoundError, ValidationError } from '../../../utils/errors';
-import { sanitizeInput } from '../../../utils/security';
+import {
+  CrudController,
+  errorResponse,
+  StatusGeneralError,
+  successResponse,
+} from '../../../middleware/crud';
+import {
+  taskCreate,
+  taskDelete,
+  taskGet,
+  taskList,
+  taskUpdate,
+} from '../../../services/task/taskService';
+
+const securable = 'TASK';
 
 /**
  * @summary
  * List all tasks for the authenticated user
  */
 export async function listHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const operation = new CrudController([{ securable, permission: 'READ' }]);
+
+  const [validated, error] = await operation.read(req);
+
+  if (!validated) {
+    return next(error);
+  }
+
   try {
-    // Get user ID from authenticated user
-    const userId = req.user?.id;
+    const data = await taskList({
+      userId: validated.credential.id,
+    });
 
-    // Get tasks from service
-    const tasks = await taskList(userId!);
-
-    // Return success response
-    res.json(successResponse(tasks));
-  } catch (error) {
-    next(error);
+    res.json(successResponse(data));
+  } catch (error: any) {
+    next(StatusGeneralError);
   }
 }
 
@@ -29,25 +45,31 @@ export async function listHandler(req: Request, res: Response, next: NextFunctio
  * Get a specific task by ID
  */
 export async function getHandler(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const operation = new CrudController([{ securable, permission: 'READ' }]);
+
+  const paramsSchema = z.object({
+    id: z.coerce.number(),
+  });
+
+  const [validated, error] = await operation.read(req, paramsSchema);
+
+  if (!validated) {
+    return next(error);
+  }
+
   try {
-    // Get user ID from authenticated user
-    const userId = req.user?.id;
+    const data = await taskGet({
+      userId: validated.credential.id,
+      taskId: validated.params.id,
+    });
 
-    // Get task ID from request parameters
-    const taskId = parseInt(req.params.id);
-
-    // Get task from service
-    const task = await taskGet(userId!, taskId);
-
-    // Check if task exists
-    if (!task) {
-      throw new NotFoundError('Task not found');
+    if (!data) {
+      return res.status(404).json(errorResponse('Task not found'));
     }
 
-    // Return success response
-    res.json(successResponse(task));
-  } catch (error) {
-    next(error);
+    res.json(successResponse(data));
+  } catch (error: any) {
+    next(StatusGeneralError);
   }
 }
 
@@ -60,53 +82,26 @@ export async function createHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
-  try {
-    // Get user ID from authenticated user
-    const userId = req.user?.id;
+  const operation = new CrudController([{ securable, permission: 'CREATE' }]);
 
-    // Validate request body
-    const schema = z.object({
-      title: z
-        .string()
-        .min(1, 'Title is required')
-        .max(255, 'Title must be 255 characters or less'),
-      description: z
-        .string()
-        .max(1000, 'Description must be 1000 characters or less')
-        .optional()
-        .default(''),
-      dueDate: z.string().datetime({ message: 'Invalid date format' }).nullable().optional(),
-      priority: z.number().int().min(1).max(3).optional().default(2),
+  const [validated, error] = await operation.create(req);
+
+  if (!validated) {
+    return next(error);
+  }
+
+  try {
+    const data = await taskCreate({
+      userId: validated.credential.id,
+      title: validated.params.title,
+      description: validated.params.description,
+      dueDate: validated.params.dueDate,
+      priority: validated.params.priority,
     });
 
-    let validatedData;
-    try {
-      validatedData = schema.parse(req.body);
-    } catch (error: unknown) {
-      if ((error as any).name === 'ZodError') {
-        const validationErrors = (error as any).errors.map((err: any) => ({
-          path: err.path.join('.'),
-          message: err.message,
-        }));
-        throw new ValidationError('Validation failed', validationErrors);
-      }
-      throw error;
-    }
-
-    // Sanitize user inputs to prevent XSS
-    const sanitizedData = {
-      ...validatedData,
-      title: sanitizeInput(validatedData.title),
-      description: validatedData.description ? sanitizeInput(validatedData.description) : '',
-    };
-
-    // Create task using service
-    const task = await taskCreate(userId!, sanitizedData);
-
-    // Return success response with location header
-    res.status(201).location(`/api/internal/tasks/${task.id}`).json(successResponse(task));
-  } catch (error) {
-    next(error);
+    res.status(201).json(successResponse(data));
+  } catch (error: any) {
+    next(StatusGeneralError);
   }
 }
 
@@ -119,25 +114,39 @@ export async function updateHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  const operation = new CrudController([{ securable, permission: 'UPDATE' }]);
+
+  const paramsSchema = z.object({
+    id: z.coerce.number(),
+    title: z.string().min(1).max(100),
+    description: z.string().optional(),
+    dueDate: z.string().optional(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
+  });
+
+  const [validated, error] = await operation.update(req, paramsSchema);
+
+  if (!validated) {
+    return next(error);
+  }
+
   try {
-    // Get user ID from authenticated user
-    const userId = req.user?.id;
+    const data = await taskUpdate({
+      userId: validated.credential.id,
+      taskId: validated.params.id,
+      title: validated.params.title,
+      description: validated.params.description,
+      dueDate: validated.params.dueDate,
+      priority: validated.params.priority,
+    });
 
-    // Get task ID from request parameters
-    const taskId = parseInt(req.params.id);
-
-    // Update task using service
-    const task = await taskUpdate(userId!, taskId, req.body);
-
-    // Check if task exists
-    if (!task) {
-      throw new NotFoundError('Task not found');
+    if (!data) {
+      return res.status(404).json(errorResponse('Task not found'));
     }
 
-    // Return success response
-    res.json(successResponse(task));
-  } catch (error) {
-    next(error);
+    res.json(successResponse(data));
+  } catch (error: any) {
+    next(StatusGeneralError);
   }
 }
 
@@ -150,24 +159,30 @@ export async function deleteHandler(
   res: Response,
   next: NextFunction
 ): Promise<void> {
+  const operation = new CrudController([{ securable, permission: 'DELETE' }]);
+
+  const paramsSchema = z.object({
+    id: z.coerce.number(),
+  });
+
+  const [validated, error] = await operation.delete(req, paramsSchema);
+
+  if (!validated) {
+    return next(error);
+  }
+
   try {
-    // Get user ID from authenticated user
-    const userId = req.user?.id;
+    const success = await taskDelete({
+      userId: validated.credential.id,
+      taskId: validated.params.id,
+    });
 
-    // Get task ID from request parameters
-    const taskId = parseInt(req.params.id);
-
-    // Delete task using service
-    const success = await taskDelete(userId!, taskId);
-
-    // Check if task exists
     if (!success) {
-      throw new NotFoundError('Task not found');
+      return res.status(404).json(errorResponse('Task not found'));
     }
 
-    // Return success response
-    res.json(successResponse({ message: 'Task deleted successfully' }));
-  } catch (error) {
-    next(error);
+    res.status(204).send();
+  } catch (error: any) {
+    next(StatusGeneralError);
   }
 }
