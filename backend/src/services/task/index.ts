@@ -7,15 +7,14 @@ import { db } from '../../instances/database';
  * @returns Created task
  */
 export async function taskCreate(taskData: TaskCreateInput): Promise<Task> {
-  const { userId, title, description, dueDate, priority } = taskData;
+  const { userId, title, description, status } = taskData;
 
   const task = await db.task.create({
     data: {
       userId,
       title,
       description: description || '',
-      dueDate,
-      priority,
+      status,
       completed: false,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -69,7 +68,7 @@ export async function taskList(userId: number): Promise<Task[]> {
  * @returns Updated task or null if not found
  */
 export async function taskUpdate(taskData: TaskUpdateInput): Promise<Task | null> {
-  const { id, userId, title, description, dueDate, priority, completed } = taskData;
+  const { id, userId, title, description, dueDate, priority, completed, status } = taskData;
 
   // Check if task exists and belongs to user
   const existingTask = await db.task.findFirst({
@@ -90,6 +89,7 @@ export async function taskUpdate(taskData: TaskUpdateInput): Promise<Task | null
       description: description || '',
       dueDate,
       priority,
+      status: status || existingTask.status,
       completed: completed ?? existingTask.completed,
       updatedAt: new Date(),
     },

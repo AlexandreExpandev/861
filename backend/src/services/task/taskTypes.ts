@@ -7,9 +7,10 @@ export interface Task {
   userId: number;
   title: string;
   description: string;
-  dueDate: Date | null;
-  priority: TaskPriority;
-  completed: boolean;
+  dueDate?: Date | null;
+  priority?: TaskPriority;
+  status: string;
+  completed?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,15 +33,17 @@ export interface TaskCreateInput {
   userId: number;
   title: string;
   description?: string;
-  dueDate: Date | null;
-  priority: TaskPriority;
+  dueDate?: Date | null;
+  priority?: TaskPriority;
+  status: string;
 }
 
 /**
  * @interface TaskUpdateInput
  * @description Input for updating an existing task
  */
-export interface TaskUpdateInput extends TaskCreateInput {
+export interface TaskUpdateInput extends Omit<TaskCreateInput, 'status'> {
   id: number;
+  status?: string;
   completed?: boolean;
 }
