@@ -53,10 +53,10 @@ export const CreateTaskForm = ({ onSuccess, onCancel }: CreateTaskFormProps) => 
         )}
       </div>
       <div className="flex justify-end space-x-2">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+        <Button type="button" onClick={onCancel} disabled={isPending}>
           Cancel
         </Button>
-        <Button type="submit" variant="default" disabled={isPending}>
+        <Button type="submit" disabled={isPending}>
           {isPending ? 'Saving...' : 'Save Task'}
         </Button>
       </div>

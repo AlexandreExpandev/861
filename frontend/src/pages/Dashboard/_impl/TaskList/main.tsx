@@ -30,7 +30,7 @@ export const TaskList = () => {
 
   return (
     <div className="space-y-4">
-      {tasks.map((task: Task) => (
+      {tasks.map((task) => (
         <div key={task.id} className="rounded-lg border bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="font-semibold">{task.title}</h3>
