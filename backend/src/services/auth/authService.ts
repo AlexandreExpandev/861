@@ -1,5 +1,5 @@
 import bcrypt from 'bcrypt';
-import jwt, { Secret } from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
 import { config } from '../../config';
 import { dbRequest } from '../../database';
 import { LoginParams, RegisterParams, AuthResult } from './authTypes';
