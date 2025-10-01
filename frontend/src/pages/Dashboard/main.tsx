@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { useAuth } from '@/core/contexts/auth';
+import { Button } from '@/core/components/Button';
+import { CreateTaskForm, TaskList } from '@/domain/task';
 
 /**
  * @page DashboardPage
@@ -9,22 +12,37 @@ import { useAuth } from '@/core/contexts/auth';
  */
 export const DashboardPage = () => {
   const { user, logout } = useAuth();
+  const [isCreatingTask, setIsCreatingTask] = useState(false);
 
   return (
-    <div className="p-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Welcome, {user?.name}!</h1>
-        <button
-          onClick={logout}
-          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-        >
-          Logout
-        </button>
-      </div>
-      <p className="text-lg text-gray-600">
-        This is your dashboard. The task list and creation features will be implemented here.
-      </p>
-      {/* Task list and create task components will go here */}
+    <div className="p-8 max-w-4xl mx-auto">
+      <header className="flex justify-between items-center mb-8 pb-4 border-b">
+        <div>
+          <h1 className="text-3xl font-bold">Bem-vindo, {user?.name}!</h1>
+          <p className="text-lg text-gray-600">Gerencie suas tarefas aqui.</p>
+        </div>
+        <Button onClick={logout} variant="destructive">
+          Sair
+        </Button>
+      </header>
+
+      <section className="mb-8">
+        {isCreatingTask ? (
+          <CreateTaskForm
+            onTaskCreated={() => setIsCreatingTask(false)}
+            onCancel={() => setIsCreatingTask(false)}
+          />
+        ) : (
+          <div className="text-right">
+            <Button onClick={() => setIsCreatingTask(true)}>+ Nova Tarefa</Button>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="text-2xl font-semibold mb-4">Suas Tarefas</h2>
+        <TaskList />
+      </section>
     </div>
   );
 };

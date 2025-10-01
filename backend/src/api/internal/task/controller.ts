@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 import { taskCreate, taskGet, taskList, taskUpdate, taskDelete } from '../../../services/task';
 import { successResponse } from '../../../utils/responses';
-import { NotFoundError } from '../../../utils/errors';
+import { NotFoundError, ValidationError } from '../../../utils/errors';
+import { sanitizeInput } from '../../../utils/security';
 
 /**
  * @summary
@@ -63,11 +64,47 @@ export async function createHandler(
     // Get user ID from authenticated user
     const userId = req.user.id;
 
-    // Create task using service
-    const task = await taskCreate(userId, req.body);
+    // Validate request body
+    const schema = z.object({
+      title: z
+        .string()
+        .min(1, 'Title is required')
+        .max(255, 'Title must be 255 characters or less'),
+      description: z
+        .string()
+        .max(1000, 'Description must be 1000 characters or less')
+        .optional()
+        .default(''),
+      dueDate: z.string().datetime({ message: 'Invalid date format' }).nullable().optional(),
+      priority: z.number().int().min(1).max(3).optional().default(2),
+    });
 
-    // Return success response
-    res.status(201).json(successResponse(task));
+    let validatedData;
+    try {
+      validatedData = schema.parse(req.body);
+    } catch (error) {
+      if (error.name === 'ZodError') {
+        const validationErrors = error.errors.map((err: any) => ({
+          path: err.path.join('.'),
+          message: err.message,
+        }));
+        throw new ValidationError('Validation failed', validationErrors);
+      }
+      throw error;
+    }
+
+    // Sanitize user inputs to prevent XSS
+    const sanitizedData = {
+      ...validatedData,
+      title: sanitizeInput(validatedData.title),
+      description: validatedData.description ? sanitizeInput(validatedData.description) : '',
+    };
+
+    // Create task using service
+    const task = await taskCreate(userId, sanitizedData);
+
+    // Return success response with location header
+    res.status(201).location(`/api/internal/tasks/${task.id}`).json(successResponse(task));
   } catch (error) {
     next(error);
   }

@@ -61,18 +61,26 @@ export async function taskGet(userId: number, taskId: number): Promise<Task | nu
  */
 export async function taskCreate(userId: number, taskData: TaskCreate): Promise<Task> {
   try {
-    // Create new task
+    // Performance monitoring start time
+    const startTime = Date.now();
+
+    // Create new task with default status as 'Pendente'
     const task = await db.task.create({
       data: {
         userId,
         title: taskData.title,
-        description: taskData.description,
+        description: taskData.description || '',
         dueDate: taskData.dueDate ? new Date(taskData.dueDate) : null,
-        priority: taskData.priority,
-        completed: false,
+        priority: taskData.priority || 2,
+        completed: false, // Default status is 'Pendente' (not completed)
         deleted: false,
       },
     });
+
+    // Performance monitoring end time
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    console.log(`Task creation completed in ${duration}ms`);
 
     return task;
   } catch (error) {

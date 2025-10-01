@@ -6,6 +6,9 @@
  * @version 1.0.0
  */
 
+// Domain public exports - Components
+export * from './components';
+
 // Domain public exports - Services
 export * from './services/taskService';
 
@@ -19,6 +22,7 @@ export const moduleMetadata = {
   name: 'task',
   domain: 'functional',
   version: '1.0.0',
+  publicComponents: ['CreateTaskForm', 'TaskList'],
   publicServices: ['taskService'],
   publicHooks: ['useTasks'],
   dependencies: {
