@@ -1,0 +1,13 @@
+/**
+ * @component LoadingSpinner
+ * @summary A simple loading spinner component to indicate background activity.
+ * @type ui-component
+ * @category feedback
+ */
+export const LoadingSpinner = () => {
+  return (
+    <div className="flex items-center justify-center w-full h-full min-h-screen">
+      <div className="w-16 h-16 border-4 border-blue-500 border-solid rounded-full animate-spin border-t-transparent"></div>
+    </div>
+  );
+};
